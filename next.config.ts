@@ -1,7 +1,42 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "3001",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "3001",
+      },
+      {
+        protocol: "https",
+        hostname: "kaosrestaurant.com"
+      },
+      {
+        protocol: "https",
+        hostname: "www.kaosrestaurant.com"
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com"
+      },
+    ],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/images/:path*',
+        destination: 'http://localhost:3001/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

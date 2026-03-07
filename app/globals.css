@@ -1,6 +1,30 @@
 @import "tailwindcss";
 
 :root {
+  /* Colores corporativos Kaos */
+  --color-kaos-orange: #e86b07;
+  --color-kaos-blue: #1c0bdb;
+  --color-kaos-black: #000000;
+  
+  /* Variaciones */
+  --color-orange-light: #ff8533;
+  --color-orange-dark: #c65a00;
+  --color-blue-light: #4d3dff;
+  --color-blue-dark: #1509a8;
+  
+  /* Neutrales */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-700: #374151;
+  --color-gray-900: #111827;
+  
+  /* Semánticos */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -8,19 +32,37 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-kaos-orange: var(--color-kaos-orange);
+  --color-kaos-blue: var(--color-kaos-blue);
+  --color-kaos-black: var(--color-kaos-black);
+  --font-sans: Arial, Helvetica, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Utilidades personalizadas */
+.btn-primary {
+  @apply bg-[#e86b07] hover:bg-[#c65a00] text-white font-semibold py-2 px-4 rounded transition-colors cursor-pointer;
+}
+
+.btn-secondary {
+  @apply bg-[#1c0bdb] hover:bg-[#1509a8] text-white font-semibold py-2 px-4 rounded transition-colors cursor-pointer;
+}
+
+.btn-outline {
+  @apply border-2 border-[#e86b07] text-[#e86b07] hover:bg-[#e86b07] hover:text-white font-semibold py-2 px-4 rounded transition-colors cursor-pointer;
+}
+
+/* Ocultar scrollbar pero mantener funcionalidad */
+.hide-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE y Edge */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari y Opera */
 }
