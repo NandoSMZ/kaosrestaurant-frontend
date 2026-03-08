@@ -7,6 +7,8 @@ import {
   GetProductQueryDto,
   LoginResponse,
   JwtPayload,
+  Transaction,
+  CreateTransactionDto,
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -81,6 +83,24 @@ export const categoriesApi = {
   
   getById: async (id: number): Promise<Category> => {
     const response = await api.get<Category>(`/categories/${id}`);
+    return response.data;
+  },
+};
+
+// Transactions API
+export const transactionsApi = {
+  create: async (data: CreateTransactionDto): Promise<Transaction> => {
+    const response = await api.post<Transaction>('/transactions', data);
+    return response.data;
+  },
+
+  getAll: async (): Promise<Transaction[]> => {
+    const response = await api.get<Transaction[]>('/transactions');
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<Transaction> => {
+    const response = await api.get<Transaction>(`/transactions/${id}`);
     return response.data;
   },
 };

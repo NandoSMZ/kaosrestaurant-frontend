@@ -90,7 +90,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
-    setIsOpen(false);
   };
 
   const toggleCart = () => setIsOpen((prev) => !prev);

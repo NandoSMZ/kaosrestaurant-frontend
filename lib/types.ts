@@ -55,3 +55,59 @@ export interface GetProductQueryDto {
   take?: number;
   skip?: number;
 }
+
+// Transactions
+export interface TransactionContent {
+  id: number;
+  quantity: number;
+  price: number;
+  product: Product;
+}
+
+export interface Transaction {
+  id: number;
+  fullName: string;
+  phone: string;
+  total: number;
+  transactionDate: string;
+  contents: TransactionContent[];
+}
+
+export interface CreateTransactionContentDto {
+  productId: number;
+  quantity: number;
+}
+
+export interface CreateTransactionDto {
+  fullName: string;
+  phone: string;
+  contents: CreateTransactionContentDto[];
+}
+
+// Transactions
+export interface TransactionContent {
+  id: number;
+  quantity: number;
+  price: number;
+  product: Product;
+}
+
+export interface Transaction {
+  id: number;
+  fullName: string;
+  phone: string;
+  total: number;
+  transactionDate: string;
+  contents: TransactionContent[];
+}
+
+export interface CreateTransactionContentDto {
+  productId: number;
+  quantity: number;
+}
+
+export interface CreateTransactionDto {
+  fullName: string;
+  phone: string;
+  contents: CreateTransactionContentDto[];
+}

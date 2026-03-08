@@ -23,8 +23,8 @@ export default function ToGoLayout({
         {children}
         {mounted && (
           <ToastContainer 
-            position="bottom-right"
-            autoClose={3000}
+            position="bottom-left"
+            autoClose={1500}
             hideProgressBar={false}
             newestOnTop
             closeOnClick
