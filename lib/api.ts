@@ -9,6 +9,7 @@ import {
   JwtPayload,
   Transaction,
   CreateTransactionDto,
+  TransactionStats,
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -101,6 +102,23 @@ export const transactionsApi = {
 
   getById: async (id: number): Promise<Transaction> => {
     const response = await api.get<Transaction>(`/transactions/${id}`);
+    return response.data;
+  },
+
+  advanceStatus: async (id: number): Promise<Transaction> => {
+    const response = await api.patch<Transaction>(`/transactions/${id}/status`);
+    return response.data;
+  },
+
+  trackByPhone: async (phone: string): Promise<Transaction[]> => {
+    const response = await api.get<Transaction[]>(`/transactions/track/${encodeURIComponent(phone)}`);
+    return response.data;
+  },
+
+  getStats: async (from: string, to: string): Promise<TransactionStats> => {
+    const response = await api.get<TransactionStats>('/transactions/stats', {
+      params: { from, to },
+    });
     return response.data;
   },
 };

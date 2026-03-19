@@ -16,9 +16,27 @@ export default function CartSidebar() {
   const [step, setStep] = useState<Step>('cart');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [errors, setErrors] = useState<{ fullName?: string; phone?: string }>({});
+  const [pickupTime, setPickupTime] = useState('');
+  const [errors, setErrors] = useState<{ fullName?: string; phone?: string; pickupTime?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<Transaction | null>(null);
+
+  // Tiempo mínimo: 30 minutos desde ahora
+  const getMinPickupTime = () => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() + 30);
+    return d.toISOString().slice(0, 16);
+  };
+
+  const formatPickupTime = (iso: string) =>
+    new Date(iso).toLocaleString('es-ES', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
   if (!isOpen) return null;
 
@@ -27,6 +45,7 @@ export default function CartSidebar() {
       setStep('cart');
       setFullName('');
       setPhone('');
+      setPickupTime('');
       setErrors({});
     }
     closeCart();
@@ -36,13 +55,14 @@ export default function CartSidebar() {
     setStep('cart');
     setFullName('');
     setPhone('');
+    setPickupTime('');
     setErrors({});
     setConfirmedOrder(null);
     closeCart();
   };
 
   const validate = (): boolean => {
-    const newErrors: { fullName?: string; phone?: string } = {};
+    const newErrors: { fullName?: string; phone?: string; pickupTime?: string } = {};
 
     if (!fullName.trim()) {
       newErrors.fullName = 'El nombre completo es obligatorio';
@@ -51,6 +71,11 @@ export default function CartSidebar() {
       newErrors.phone = 'El teléfono es obligatorio';
     } else if (!/^[0-9+\s\-()]{6,20}$/.test(phone.trim())) {
       newErrors.phone = 'Ingresa un teléfono válido';
+    }
+    if (!pickupTime) {
+      newErrors.pickupTime = 'Selecciona la hora de recogida';
+    } else if (new Date(pickupTime) < new Date(Date.now() + 25 * 60 * 1000)) {
+      newErrors.pickupTime = 'La hora debe ser al menos 30 minutos a partir de ahora';
     }
 
     setErrors(newErrors);
@@ -65,6 +90,7 @@ export default function CartSidebar() {
       const order = await transactionsApi.create({
         fullName: fullName.trim(),
         phone: phone.trim(),
+        pickupTime: new Date(pickupTime).toISOString(),
         contents: items.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
@@ -83,7 +109,7 @@ export default function CartSidebar() {
   };
 
   return (
-    <div className="relative z-[70]">
+    <div className="relative z-70">
       {/* Overlay */}
       <div className="fixed inset-0 bg-black/30" onClick={handleClose} />
 
@@ -115,7 +141,7 @@ export default function CartSidebar() {
                   {items.map((item) => (
                     <div key={item.product.id} className="bg-gray-50 rounded-lg p-3">
                       <div className="flex gap-3">
-                        <div className="relative h-20 w-20 flex-shrink-0 rounded overflow-hidden">
+                        <div className="relative h-20 w-20 shrink-0 rounded overflow-hidden">
                           <Image
                             src={getImageUrl(item.product.image)}
                             alt={item.product.name}
@@ -262,6 +288,28 @@ export default function CartSidebar() {
                     <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
                   )}
                 </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    ¿Cuándo pasarás a recoger? <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={pickupTime}
+                    min={getMinPickupTime()}
+                    onChange={(e) => {
+                      setPickupTime(e.target.value);
+                      if (errors.pickupTime) setErrors((prev) => ({ ...prev, pickupTime: undefined }));
+                    }}
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e86b07] ${
+                      errors.pickupTime ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.pickupTime && (
+                    <p className="text-red-500 text-xs mt-1">{errors.pickupTime}</p>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">Mínimo 30 minutos a partir de ahora</p>
+                </div>
               </div>
             </div>
 
@@ -314,6 +362,14 @@ export default function CartSidebar() {
                   <span className="text-gray-600">Cliente:</span>
                   <span className="font-semibold">{confirmedOrder.fullName}</span>
                 </div>
+                {confirmedOrder.pickupTime && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Recogida:</span>
+                    <span className="font-semibold text-right text-xs capitalize">
+                      {formatPickupTime(confirmedOrder.pickupTime)}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total:</span>
                   <span className="font-bold text-[#e86b07] text-base">
@@ -321,6 +377,14 @@ export default function CartSidebar() {
                   </span>
                 </div>
               </div>
+
+              {/* Estado inicial */}
+              <div className="w-full bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800 font-medium text-center mb-2">
+                🕐 Restaurante confirmando tu pedido...
+              </div>
+              <p className="text-xs text-gray-400 text-center mb-4">
+                Usa <strong>Seguir Pedido</strong> para ver el estado en tiempo real
+              </p>
 
               <div className="w-full space-y-1">
                 {confirmedOrder.contents?.map((item) => (

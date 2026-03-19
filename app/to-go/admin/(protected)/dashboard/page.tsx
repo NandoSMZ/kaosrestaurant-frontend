@@ -2,64 +2,80 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { productsApi, categoriesApi } from '@/lib/api';
-import { Product } from '@/lib/types';
+import { productsApi, categoriesApi, transactionsApi } from '@/lib/api';
+import { TransactionStatus } from '@/lib/types';
+
+const STATUS_LABELS: Record<TransactionStatus, string> = {
+  [TransactionStatus.PENDING]: '🕐 Pendientes',
+  [TransactionStatus.PREPARING]: '👨‍🍳 Preparando',
+  [TransactionStatus.READY]: '✅ Listas',
+  [TransactionStatus.COMPLETED]: '🎉 Completadas',
+};
+
+const STATUS_COLORS: Record<TransactionStatus, string> = {
+  [TransactionStatus.PENDING]: 'text-yellow-600',
+  [TransactionStatus.PREPARING]: 'text-blue-600',
+  [TransactionStatus.READY]: 'text-green-600',
+  [TransactionStatus.COMPLETED]: 'text-gray-500',
+};
+
+const STATUS_BG: Record<TransactionStatus, string> = {
+  [TransactionStatus.PENDING]: 'bg-yellow-50 border-yellow-200',
+  [TransactionStatus.PREPARING]: 'bg-blue-50 border-blue-200',
+  [TransactionStatus.READY]: 'bg-green-50 border-green-200',
+  [TransactionStatus.COMPLETED]: 'bg-gray-50 border-gray-200',
+};
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState({
+  const [productStats, setProductStats] = useState({
     totalProducts: 0,
     activeProducts: 0,
     inactiveProducts: 0,
     totalCategories: 0,
   });
+
+  const [orderCounts, setOrderCounts] = useState<Record<TransactionStatus, number>>({
+    [TransactionStatus.PENDING]: 0,
+    [TransactionStatus.PREPARING]: 0,
+    [TransactionStatus.READY]: 0,
+    [TransactionStatus.COMPLETED]: 0,
+  });
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchStats();
+    const fetchAll = async () => {
+      try {
+        setLoading(true);
+        const [products, categories, orders] = await Promise.all([
+          productsApi.getAll({ take: 1000 }),
+          categoriesApi.getAll(),
+          transactionsApi.getAll(),
+        ]);
+        setProductStats({
+          totalProducts: products.length,
+          activeProducts: products.filter((p) => p.status).length,
+          inactiveProducts: products.filter((p) => !p.status).length,
+          totalCategories: categories.length,
+        });
+        const counts: Record<TransactionStatus, number> = {
+          [TransactionStatus.PENDING]: 0,
+          [TransactionStatus.PREPARING]: 0,
+          [TransactionStatus.READY]: 0,
+          [TransactionStatus.COMPLETED]: 0,
+        };
+        for (const o of orders) {
+          if (o.status in counts) counts[o.status as TransactionStatus]++;
+        }
+        setOrderCounts(counts);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
   }, []);
-
-  const fetchStats = async () => {
-    try {
-      setLoading(true);
-      const [products, categories] = await Promise.all([
-        productsApi.getAll({ take: 1000 }),
-        categoriesApi.getAll(),
-      ]);
-
-      setStats({
-        totalProducts: products.length,
-        activeProducts: products.filter((p) => p.status).length,
-        inactiveProducts: products.filter((p) => !p.status).length,
-        totalCategories: categories.length,
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const StatCard = ({
-    title,
-    value,
-    color,
-    icon,
-  }: {
-    title: string;
-    value: number;
-    color: string;
-    icon: string;
-  }) => (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
-          <p className={`text-3xl font-bold ${color}`}>{value}</p>
-        </div>
-        <div className={`text-5xl ${color}`}>{icon}</div>
-      </div>
-    </div>
-  );
 
   if (loading) {
     return (
@@ -72,70 +88,85 @@ export default function DashboardPage() {
     );
   }
 
+  const activeOrders =
+    orderCounts[TransactionStatus.PENDING] +
+    orderCounts[TransactionStatus.PREPARING] +
+    orderCounts[TransactionStatus.READY];
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          title="Total Productos"
-          value={stats.totalProducts}
-          color="text-[#e86b07]"
-          icon="📦"
-        />
-        <StatCard
-          title="Productos Activos"
-          value={stats.activeProducts}
-          color="text-green-600"
-          icon="✅"
-        />
-        <StatCard
-          title="Productos Inactivos"
-          value={stats.inactiveProducts}
-          color="text-red-600"
-          icon="❌"
-        />
-        <StatCard
-          title="Categorías"
-          value={stats.totalCategories}
-          color="text-[#1c0bdb]"
-          icon="📁"
-        />
-      </div>
+      {/* ── Resumen en vivo ── */}
+      <section>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">Resumen en vivo</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {(Object.values(TransactionStatus) as TransactionStatus[]).map((status) => (
+            <div
+              key={status}
+              className={`rounded-lg border p-5 flex flex-col gap-1 ${STATUS_BG[status]}`}
+            >
+              <span className="text-sm text-gray-500">{STATUS_LABELS[status]}</span>
+              <span className={`text-4xl font-bold ${STATUS_COLORS[status]}`}>
+                {orderCounts[status]}
+              </span>
+              <span className="text-xs text-gray-400">órdenes</span>
+            </div>
+          ))}
+        </div>
+        {activeOrders > 0 && (
+          <p className="mt-3 text-sm text-[#e86b07] font-medium">
+            ⚡ {activeOrders} orden{activeOrders !== 1 ? 'es' : ''} activa
+            {activeOrders !== 1 ? 's' : ''} en este momento
+          </p>
+        )}
+      </section>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Acciones Rápidas</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link
-            href="/to-go/admin/products/new"
-            className="btn-primary text-center py-4"
-          >
+      {/* ── Catálogo ── */}
+      <section>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">Catálogo</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg shadow-md p-5">
+            <p className="text-sm text-gray-500 mb-1">Total Productos</p>
+            <p className="text-3xl font-bold text-[#e86b07]">{productStats.totalProducts}</p>
+            <p className="text-2xl mt-1">📦</p>
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-5">
+            <p className="text-sm text-gray-500 mb-1">Productos Activos</p>
+            <p className="text-3xl font-bold text-green-600">{productStats.activeProducts}</p>
+            <p className="text-2xl mt-1">✅</p>
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-5">
+            <p className="text-sm text-gray-500 mb-1">Productos Inactivos</p>
+            <p className="text-3xl font-bold text-red-500">{productStats.inactiveProducts}</p>
+            <p className="text-2xl mt-1">❌</p>
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-5">
+            <p className="text-sm text-gray-500 mb-1">Categorías</p>
+            <p className="text-3xl font-bold text-[#1c0bdb]">{productStats.totalCategories}</p>
+            <p className="text-2xl mt-1">📁</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Acciones rápidas ── */}
+      <section className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">Acciones Rápidas</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Link href="/to-go/admin/products/new" className="btn-primary text-center py-4">
             ➕ Nuevo Producto
           </Link>
-          <Link
-            href="/to-go/admin/products"
-            className="btn-secondary text-center py-4"
-          >
+          <Link href="/to-go/admin/products" className="btn-secondary text-center py-4">
             📋 Ver Productos
           </Link>
-          <Link
-            href="/to-go/admin/orders"
-            className="btn-outline text-center py-4"
-          >
+          <Link href="/to-go/admin/orders" className="btn-outline text-center py-4">
             🛒 Ver Órdenes
           </Link>
+          <Link href="/to-go/admin/stats" className="btn-outline text-center py-4">
+            📊 Estadísticas
+          </Link>
         </div>
-      </div>
-
-      {/* Info Section */}
-      <div className="mt-8 bg-gradient-to-r from-[#e86b07] to-[#1c0bdb] rounded-lg p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">Bienvenido al Panel de Administración</h2>
-        <p className="text-lg">
-          Desde aquí puedes gestionar todos los productos y órdenes de Kaos To Go.
-        </p>
-      </div>
+      </section>
     </div>
   );
 }

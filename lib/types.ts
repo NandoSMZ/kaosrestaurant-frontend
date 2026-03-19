@@ -56,7 +56,15 @@ export interface GetProductQueryDto {
   skip?: number;
 }
 
-// Transactions
+// ── Transactions ────────────────────────────────────────────────────────────
+
+export enum TransactionStatus {
+  PENDING = 'PENDING',
+  PREPARING = 'PREPARING',
+  READY = 'READY',
+  COMPLETED = 'COMPLETED',
+}
+
 export interface TransactionContent {
   id: number;
   quantity: number;
@@ -70,6 +78,8 @@ export interface Transaction {
   phone: string;
   total: number;
   transactionDate: string;
+  status: TransactionStatus;
+  pickupTime: string | null;
   contents: TransactionContent[];
 }
 
@@ -81,33 +91,25 @@ export interface CreateTransactionContentDto {
 export interface CreateTransactionDto {
   fullName: string;
   phone: string;
+  pickupTime: string;
   contents: CreateTransactionContentDto[];
 }
 
-// Transactions
-export interface TransactionContent {
-  id: number;
-  quantity: number;
-  price: number;
-  product: Product;
+export interface TransactionStatsByStatus {
+  count: number;
+  revenue: number;
 }
 
-export interface Transaction {
-  id: number;
-  fullName: string;
-  phone: string;
-  total: number;
-  transactionDate: string;
-  contents: TransactionContent[];
+export interface TransactionStatsByDay {
+  count: number;
+  revenue: number;
 }
 
-export interface CreateTransactionContentDto {
-  productId: number;
-  quantity: number;
-}
-
-export interface CreateTransactionDto {
-  fullName: string;
-  phone: string;
-  contents: CreateTransactionContentDto[];
+export interface TransactionStats {
+  from: string;
+  to: string;
+  totalOrders: number;
+  totalRevenue: number;
+  byStatus: Record<TransactionStatus, TransactionStatsByStatus>;
+  byDay: Record<string, TransactionStatsByDay>; // key: 'YYYY-MM-DD'
 }

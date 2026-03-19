@@ -54,6 +54,7 @@ export default function AdminNavbar() {
     { href: '/to-go/admin/dashboard', label: 'Dashboard' },
     { href: '/to-go/admin/products', label: 'Productos' },
     { href: '/to-go/admin/orders', label: 'Órdenes', badge: unreadCount },
+    { href: '/to-go/admin/stats', label: 'Estadísticas' },
   ];
 
   return (
