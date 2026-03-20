@@ -175,7 +175,7 @@ export default function AdminNavbar() {
                               <div className="flex justify-between items-center mt-0.5">
                                 <span className="text-xs text-gray-400">{formatTimeAgo(n.timestamp)}</span>
                                 <span className="text-xs font-bold text-[#e86b07]">
-                                  ${Number(n.total).toFixed(2)}
+                                  {Number(n.total).toFixed(2)}€
                                 </span>
                               </div>
                             </button>
@@ -283,7 +283,7 @@ export default function AdminNavbar() {
                       <p className="text-xs text-gray-400">{formatTimeAgo(n.timestamp)}</p>
                     </div>
                     <span className="text-xs font-bold text-[#e86b07]">
-                      ${Number(n.total).toFixed(2)}
+                      {Number(n.total).toFixed(2)}€
                     </span>
                   </div>
                 ))}

@@ -84,7 +84,7 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
 
         <div className="flex items-center justify-between mb-6">
           <div className="text-2xl font-bold text-[#e86b07]">
-            ${Number(product.price).toFixed(2)}
+            {Number(product.price).toFixed(2)}€
           </div>
           
           <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export default function ProductDetailModal({ product, onClose }: ProductDetailMo
           onClick={handleAddToCart}
           className="w-full bg-[#e86b07] hover:bg-[#d15f06] text-white font-bold py-3 px-6 rounded-lg transition-colors cursor-pointer"
         >
-          Agregar al carrito · ${(Number(product.price) * quantity).toFixed(2)}
+          Agregar al carrito · {(Number(product.price) * quantity).toFixed(2)}€
         </button>
       </div>
     </div>

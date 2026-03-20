@@ -7,11 +7,91 @@ import { productsApi, getImageUrl } from '@/lib/api';
 import { Product } from '@/lib/types';
 import { toast } from 'react-toastify';
 
+const PAGE_SIZES = [10, 20, 50] as const;
+type PageSize = (typeof PAGE_SIZES)[number];
+
+function PaginationBar({
+  total,
+  page,
+  pageSize,
+  onPage,
+  onPageSize,
+}: {
+  total: number;
+  page: number;
+  pageSize: PageSize;
+  onPage: (p: number) => void;
+  onPageSize: (s: PageSize) => void;
+}) {
+  const totalPages = Math.ceil(total / pageSize);
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-gray-100 bg-gray-50 rounded-b-lg text-sm text-gray-600">
+      <div className="flex items-center gap-2">
+        <span>Filas por página:</span>
+        {PAGE_SIZES.map((s) => (
+          <button
+            key={s}
+            onClick={() => onPageSize(s)}
+            className={`px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
+              pageSize === s
+                ? 'bg-[#e86b07] text-white'
+                : 'bg-white border border-gray-200 hover:border-[#e86b07] text-gray-600'
+            }`}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+      <span className="text-gray-400">
+        {from}–{to} de {total}
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPage(1)}
+          disabled={page === 1}
+          className="px-2 py-1 rounded-lg border border-gray-200 disabled:opacity-40 hover:border-[#e86b07] cursor-pointer"
+        >
+          «
+        </button>
+        <button
+          onClick={() => onPage(page - 1)}
+          disabled={page === 1}
+          className="px-2 py-1 rounded-lg border border-gray-200 disabled:opacity-40 hover:border-[#e86b07] cursor-pointer"
+        >
+          ‹
+        </button>
+        <span className="px-3 py-1 font-semibold text-gray-700">
+          {page} / {totalPages || 1}
+        </span>
+        <button
+          onClick={() => onPage(page + 1)}
+          disabled={page >= totalPages}
+          className="px-2 py-1 rounded-lg border border-gray-200 disabled:opacity-40 hover:border-[#e86b07] cursor-pointer"
+        >
+          ›
+        </button>
+        <button
+          onClick={() => onPage(totalPages)}
+          disabled={page >= totalPages}
+          className="px-2 py-1 rounded-lg border border-gray-200 disabled:opacity-40 hover:border-[#e86b07] cursor-pointer"
+        >
+          »
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<PageSize>(10);
 
   useEffect(() => {
     fetchProducts();
@@ -68,6 +148,14 @@ export default function ProductsPage() {
 
     return matchesFilter && matchesSearch;
   });
+
+  // Reset página cuando cambia filtro, búsqueda o tamaño de página
+  useEffect(() => {
+    setPage(1);
+  }, [filter, searchTerm, pageSize]);
+
+  const totalFiltered = filteredProducts.length;
+  const pagedProducts = filteredProducts.slice((page - 1) * pageSize, page * pageSize);
 
   if (loading) {
     return (
@@ -138,7 +226,9 @@ export default function ProductsPage() {
       {/* Products Table/Cards */}
       {filteredProducts.length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <p className="text-gray-600 text-lg">No se encontraron productos</p>
+          <p className="text-gray-600 text-lg">
+            {searchTerm ? 'Sin resultados para tu búsqueda' : 'No se encontraron productos'}
+          </p>
         </div>
       ) : (
         <>
@@ -168,7 +258,7 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredProducts.map((product) => (
+                {pagedProducts.map((product) => (
                   <tr key={product.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="relative h-16 w-16 rounded overflow-hidden">
@@ -194,7 +284,7 @@ export default function ProductsPage() {
                       {product.category?.name || 'Sin categoría'}
                     </td>
                     <td className="px-6 py-4 font-bold text-[#e86b07]">
-                      ${Number(product.price).toFixed(2)}
+                      {Number(product.price).toFixed(2)}€
                     </td>
                     <td className="px-6 py-4">
                       <button
@@ -231,15 +321,22 @@ export default function ProductsPage() {
                 ))}
               </tbody>
             </table>
+            <PaginationBar
+              total={totalFiltered}
+              page={page}
+              pageSize={pageSize}
+              onPage={setPage}
+              onPageSize={(s) => { setPageSize(s); setPage(1); }}
+            />
           </div>
 
           {/* Mobile Cards View */}
           <div className="md:hidden space-y-4">
-            {filteredProducts.map((product) => (
+            {pagedProducts.map((product) => (
               <div key={product.id} className="bg-white rounded-lg shadow-md p-4">
                 <div className="flex gap-4">
                   {/* Image */}
-                  <div className="relative h-20 w-20 flex-shrink-0 rounded overflow-hidden">
+                  <div className="relative h-20 w-20 shrink-0 rounded overflow-hidden">
                     <Image
                       src={getImageUrl(product.image)}
                       alt={product.name}
@@ -257,7 +354,7 @@ export default function ProductsPage() {
                       {product.category?.name || 'Sin categoría'}
                     </p>
                     <p className="font-bold text-[#e86b07] text-xl">
-                      ${Number(product.price).toFixed(2)}
+                      {Number(product.price).toFixed(2)}€
                     </p>
                   </div>
                 </div>
@@ -307,6 +404,16 @@ export default function ProductsPage() {
                 </div>
               </div>
             ))}
+            {/* Mobile pagination */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <PaginationBar
+                total={totalFiltered}
+                page={page}
+                pageSize={pageSize}
+                onPage={setPage}
+                onPageSize={(s) => { setPageSize(s); setPage(1); }}
+              />
+            </div>
           </div>
         </>
       )}

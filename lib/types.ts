@@ -63,6 +63,7 @@ export enum TransactionStatus {
   PREPARING = 'PREPARING',
   READY = 'READY',
   COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
 }
 
 export interface TransactionContent {
@@ -80,6 +81,8 @@ export interface Transaction {
   transactionDate: string;
   status: TransactionStatus;
   pickupTime: string | null;
+  cancellationNote: string | null;
+  cancelledAt: string | null;
   contents: TransactionContent[];
 }
 

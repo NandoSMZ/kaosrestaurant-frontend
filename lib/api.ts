@@ -110,6 +110,18 @@ export const transactionsApi = {
     return response.data;
   },
 
+  /** Usuario cancela su propia orden (solo si está en PENDING) */
+  cancelOrder: async (id: number): Promise<Transaction> => {
+    const response = await api.patch<Transaction>(`/transactions/${id}/cancel`);
+    return response.data;
+  },
+
+  /** Admin cancela desde cualquier estado con nota obligatoria */
+  adminCancelOrder: async (id: number, note: string): Promise<Transaction> => {
+    const response = await api.patch<Transaction>(`/transactions/${id}/cancel/admin`, { note });
+    return response.data;
+  },
+
   trackByPhone: async (phone: string): Promise<Transaction[]> => {
     const response = await api.get<Transaction[]>(`/transactions/track/${encodeURIComponent(phone)}`);
     return response.data;

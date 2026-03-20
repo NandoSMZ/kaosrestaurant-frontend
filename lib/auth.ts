@@ -32,7 +32,23 @@ export const getUser = (): { username: string } | null => {
 };
 
 export const isAuthenticated = (): boolean => {
-  return !!getToken();
+  const token = getToken();
+  if (!token) return false;
+  try {
+    // Decodificar payload del JWT (base64) y verificar expiración
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (payload.exp && Date.now() >= payload.exp * 1000) {
+      // Token expirado — limpiar sesión
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export const validateToken = async (token: string): Promise<boolean> => {

@@ -10,6 +10,7 @@ const STATUS_LABELS: Record<TransactionStatus, string> = {
   [TransactionStatus.PREPARING]: '👨‍🍳 Preparando',
   [TransactionStatus.READY]: '✅ Listas',
   [TransactionStatus.COMPLETED]: '🎉 Completadas',
+  [TransactionStatus.CANCELLED]: '🚫 Canceladas',
 };
 
 const STATUS_COLORS: Record<TransactionStatus, string> = {
@@ -17,6 +18,7 @@ const STATUS_COLORS: Record<TransactionStatus, string> = {
   [TransactionStatus.PREPARING]: 'text-blue-600',
   [TransactionStatus.READY]: 'text-green-600',
   [TransactionStatus.COMPLETED]: 'text-gray-500',
+  [TransactionStatus.CANCELLED]: 'text-red-600',
 };
 
 const STATUS_BG: Record<TransactionStatus, string> = {
@@ -24,6 +26,7 @@ const STATUS_BG: Record<TransactionStatus, string> = {
   [TransactionStatus.PREPARING]: 'bg-blue-50 border-blue-200',
   [TransactionStatus.READY]: 'bg-green-50 border-green-200',
   [TransactionStatus.COMPLETED]: 'bg-gray-50 border-gray-200',
+  [TransactionStatus.CANCELLED]: 'bg-red-50 border-red-200',
 };
 
 export default function DashboardPage() {
@@ -39,6 +42,7 @@ export default function DashboardPage() {
     [TransactionStatus.PREPARING]: 0,
     [TransactionStatus.READY]: 0,
     [TransactionStatus.COMPLETED]: 0,
+    [TransactionStatus.CANCELLED]: 0,
   });
 
   const [loading, setLoading] = useState(true);
@@ -63,6 +67,7 @@ export default function DashboardPage() {
           [TransactionStatus.PREPARING]: 0,
           [TransactionStatus.READY]: 0,
           [TransactionStatus.COMPLETED]: 0,
+          [TransactionStatus.CANCELLED]: 0,
         };
         for (const o of orders) {
           if (o.status in counts) counts[o.status as TransactionStatus]++;

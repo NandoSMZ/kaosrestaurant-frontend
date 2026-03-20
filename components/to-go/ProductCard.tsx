@@ -55,7 +55,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         
         <div className="flex items-center justify-between">
           <span className="text-2xl font-bold text-[#e86b07]">
-            ${Number(product.price).toFixed(2)}
+            {Number(product.price).toFixed(2)}€
           </span>
           
           <button

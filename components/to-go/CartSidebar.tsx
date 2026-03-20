@@ -155,7 +155,7 @@ export default function CartSidebar() {
                             {item.product.name}
                           </h3>
                           <p className="text-[#e86b07] font-bold">
-                            ${Number(item.product.price).toFixed(2)}
+                            {Number(item.product.price).toFixed(2)}€
                           </p>
 
                           <div className="flex items-center gap-2 mt-2">
@@ -191,7 +191,7 @@ export default function CartSidebar() {
                       <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between text-sm">
                         <span className="text-gray-600">Subtotal:</span>
                         <span className="font-bold">
-                          ${(Number(item.product.price) * item.quantity).toFixed(2)}
+                          {(Number(item.product.price) * item.quantity).toFixed(2)}€
                         </span>
                       </div>
                     </div>
@@ -204,7 +204,7 @@ export default function CartSidebar() {
               <div className="border-t border-gray-200 p-4 bg-gray-50">
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-lg font-bold text-gray-900">Total:</span>
-                  <span className="text-2xl font-bold text-[#e86b07]">${total.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-[#e86b07]">{total.toFixed(2)}€</span>
                 </div>
                 <button
                   onClick={() => setStep('checkout')}
@@ -231,14 +231,14 @@ export default function CartSidebar() {
                         {item.product.name} × {item.quantity}
                       </span>
                       <span className="font-semibold">
-                        ${(Number(item.product.price) * item.quantity).toFixed(2)}
+                        {(Number(item.product.price) * item.quantity).toFixed(2)}€
                       </span>
                     </div>
                   ))}
                 </div>
                 <div className="border-t border-gray-300 mt-3 pt-3 flex justify-between font-bold text-gray-900">
                   <span>Total:</span>
-                  <span className="text-[#e86b07]">${total.toFixed(2)}</span>
+                  <span className="text-[#e86b07]">{total.toFixed(2)}€</span>
                 </div>
               </div>
 
@@ -373,7 +373,7 @@ export default function CartSidebar() {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total:</span>
                   <span className="font-bold text-[#e86b07] text-base">
-                    ${Number(confirmedOrder.total).toFixed(2)}
+                    {Number(confirmedOrder.total).toFixed(2)}€
                   </span>
                 </div>
               </div>
@@ -395,7 +395,7 @@ export default function CartSidebar() {
                     <span>
                       {item.product.name} × {item.quantity}
                     </span>
-                    <span>${(Number(item.price) * item.quantity).toFixed(2)}</span>
+                    <span>{(Number(item.price) * item.quantity).toFixed(2)}€</span>
                   </div>
                 ))}
               </div>

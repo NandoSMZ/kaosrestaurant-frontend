@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'react-toastify';
 
@@ -10,7 +11,15 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  // Si ya hay sesión activa, redirigir al dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/to-go/admin/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,8 +46,11 @@ export default function AdminLoginPage() {
     }
   };
 
+  // No renderizar el formulario si ya está autenticado (evita flash)
+  if (isAuthenticated) return null;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#e86b07] to-[#1c0bdb] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-linear-to-br from-[#e86b07] to-[#1c0bdb] flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8">
         {/* Logo */}
         <div className="text-center mb-8">
