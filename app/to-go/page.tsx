@@ -243,7 +243,7 @@ export default function ToGoPage() {
                       if (el) activeTabRefs.current[categoryName] = el;
                     }}
                     onClick={() => handleCategoryClick(categoryName)}
-                    className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 cursor-pointer ${
+                    className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
                       activeCategory === categoryName
                         ? 'border-b-2 border-[#e86b07] text-[#e86b07] font-bold'
                         : 'text-gray-600 hover:text-[#e86b07]'
@@ -281,7 +281,7 @@ export default function ToGoPage() {
         ) : (
           <>
             {/* Hero Section */}
-            <div className="bg-gradient-to-r from-[#e86b07] to-[#1c0bdb] rounded-lg p-8 mb-8 text-white">
+            <div className="bg-linear-to-r from-[#e86b07] to-[#1c0bdb] rounded-lg p-8 mb-8 text-white">
               <h2 className="text-4xl font-bold mb-2">¡Bienvenido a Kaos To Go!</h2>
               <p className="text-lg">Explora nuestro menú y ordena tus platillos favoritos</p>
             </div>
