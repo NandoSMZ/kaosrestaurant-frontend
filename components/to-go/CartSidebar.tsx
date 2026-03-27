@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useCart } from '@/contexts/CartContext';
-import { getImageUrl, transactionsApi } from '@/lib/api';
-import { Transaction } from '@/lib/types';
+import { getImageUrl, transactionsApi, schedulesApi } from '@/lib/api';
+import { Transaction, Schedule } from '@/lib/types';
 import { toast } from 'react-toastify';
 
 type Step = 'cart' | 'checkout' | 'success';
@@ -20,12 +20,42 @@ export default function CartSidebar() {
   const [errors, setErrors] = useState<{ fullName?: string; phone?: string; pickupTime?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<Transaction | null>(null);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
 
-  // Tiempo mínimo: 30 minutos desde ahora
+  // Tiempo mínimo: 20 minutos desde ahora en formato datetime-local (hora local)
   const getMinPickupTime = () => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() + 30);
-    return d.toISOString().slice(0, 16);
+    const d = new Date(Date.now() + 20 * 60 * 1000);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  // Cargar horarios semanales al abrir el checkout
+  useEffect(() => {
+    if (step === 'checkout') {
+      setLoadingSchedules(true);
+      schedulesApi
+        .getAll()
+        .then(setSchedules)
+        .catch(() => setSchedules([]))
+        .finally(() => setLoadingSchedules(false));
+    }
+  }, [step]);
+
+  /** Obtiene el horario correspondiente al día del pickupTime seleccionado */
+  const getScheduleForPickup = (pickupValue: string): Schedule | undefined => {
+    if (!pickupValue || schedules.length === 0) return undefined;
+    const d = new Date(pickupValue);
+    // JS getDay(): Dom=0..Sáb=6  →  nuestro convenio: Lun=0..Dom=6
+    const dayOfWeek = (d.getDay() + 6) % 7;
+    return schedules.find((s) => s.dayOfWeek === dayOfWeek);
+  };
+
+  /** Avanza al checkout pre-cargando el mínimo de recogida */
+  const handleGoToCheckout = () => {
+    setPickupTime(getMinPickupTime());
+    setErrors({});
+    setStep('checkout');
   };
 
   const formatPickupTime = (iso: string) =>
@@ -74,8 +104,24 @@ export default function CartSidebar() {
     }
     if (!pickupTime) {
       newErrors.pickupTime = 'Selecciona la hora de recogida';
-    } else if (new Date(pickupTime) < new Date(Date.now() + 25 * 60 * 1000)) {
-      newErrors.pickupTime = 'La hora debe ser al menos 30 minutos a partir de ahora';
+    } else if (new Date(pickupTime) < new Date(Date.now() + 18 * 60 * 1000)) {
+      newErrors.pickupTime = 'La hora debe ser al menos 20 minutos a partir de ahora';
+    } else {
+      const schedule = getScheduleForPickup(pickupTime);
+      if (schedules.length > 0) {
+        if (!schedule || !schedule.isActive) {
+          const dayName = new Date(pickupTime).toLocaleDateString('es-ES', { weekday: 'long' });
+          newErrors.pickupTime = `La tienda no abre los ${dayName}s. Consulta los horarios disponibles.`;
+        } else {
+          const d = new Date(pickupTime);
+          const pickupMins = d.getHours() * 60 + d.getMinutes();
+          const [oh, om] = schedule.openTime.split(':').map(Number);
+          const [ch, cm] = schedule.closeTime.split(':').map(Number);
+          if (pickupMins < oh * 60 + om || pickupMins >= ch * 60 + cm) {
+            newErrors.pickupTime = `La tienda está cerrada a esa hora. El ${schedule.dayName} abrimos de ${schedule.openTime} a ${schedule.closeTime}.`;
+          }
+        }
+      }
     }
 
     setErrors(newErrors);
@@ -207,7 +253,7 @@ export default function CartSidebar() {
                   <span className="text-2xl font-bold text-[#e86b07]">{total.toFixed(2)}€</span>
                 </div>
                 <button
-                  onClick={() => setStep('checkout')}
+                  onClick={handleGoToCheckout}
                   className="w-full bg-[#e86b07] hover:bg-[#d05f06] text-white font-bold text-lg py-3 rounded-lg transition cursor-pointer"
                 >
                   Realizar Pedido
@@ -221,6 +267,29 @@ export default function CartSidebar() {
         {step === 'checkout' && (
           <>
             <div className="flex-1 overflow-y-auto p-4">
+              {/* Horarios de la tienda */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+                <p className="text-sm font-bold text-amber-800 mb-2">🕐 Horarios de recogida</p>
+                {loadingSchedules ? (
+                  <div className="flex items-center gap-2 text-xs text-amber-600">
+                    <span className="h-3 w-3 border-2 border-amber-500 border-r-transparent rounded-full animate-spin inline-block" />
+                    Cargando horarios...
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                    {schedules.map((s) => (
+                      <div key={s.id} className="flex justify-between text-xs py-0.5">
+                        <span className={`font-medium ${s.isActive ? 'text-amber-900' : 'text-gray-400'}`}>
+                          {s.dayName}
+                        </span>
+                        <span className={s.isActive ? 'text-amber-700' : 'text-gray-400'}>
+                          {s.isActive ? `${s.openTime}–${s.closeTime}` : 'Cerrado'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               {/* Resumen */}
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <h3 className="font-bold text-gray-700 mb-2">Resumen de tu orden</h3>
@@ -308,7 +377,19 @@ export default function CartSidebar() {
                   {errors.pickupTime && (
                     <p className="text-red-500 text-xs mt-1">{errors.pickupTime}</p>
                   )}
-                  <p className="text-xs text-gray-400 mt-1">Mínimo 30 minutos a partir de ahora</p>
+                  {/* Indicador en tiempo real del horario del día seleccionado */}
+                  {pickupTime && schedules.length > 0 && (() => {
+                    const sch = getScheduleForPickup(pickupTime);
+                    if (!sch) return null;
+                    return (
+                      <p className={`text-xs mt-1 ${sch.isActive ? 'text-green-600' : 'text-red-500'}`}>
+                        {sch.isActive
+                          ? `✓ ${sch.dayName}: abrimos de ${sch.openTime} a ${sch.closeTime}`
+                          : `✗ La tienda no abre los ${sch.dayName.toLowerCase()}s`}
+                      </p>
+                    );
+                  })()}
+                  {!pickupTime && <p className="text-xs text-gray-400 mt-1">Mínimo 20 minutos a partir de ahora</p>}
                 </div>
               </div>
             </div>

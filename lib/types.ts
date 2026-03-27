@@ -116,3 +116,26 @@ export interface TransactionStats {
   byStatus: Record<TransactionStatus, TransactionStatsByStatus>;
   byDay: Record<string, TransactionStatsByDay>; // key: 'YYYY-MM-DD'
 }
+
+// ── Horarios ─────────────────────────────────────────────────────────────────
+export interface Schedule {
+  id: number;
+  /** 0 = Domingo, 1 = Lunes, ..., 6 = Sábado */
+  dayOfWeek: number;
+  dayName: string;
+  openTime: string;  // 'HH:mm'
+  closeTime: string; // 'HH:mm'
+  isActive: boolean;
+}
+
+export interface ScheduleStatus {
+  isOpen: boolean;
+  schedule: Schedule | null;
+  message: string;
+}
+
+export interface UpdateScheduleDto {
+  openTime?: string;
+  closeTime?: string;
+  isActive?: boolean;
+}

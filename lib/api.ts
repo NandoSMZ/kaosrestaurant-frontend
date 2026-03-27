@@ -10,6 +10,9 @@ import {
   Transaction,
   CreateTransactionDto,
   TransactionStats,
+  Schedule,
+  ScheduleStatus,
+  UpdateScheduleDto,
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -144,6 +147,24 @@ export const authApi = {
   
   validate: async (token: string): Promise<{ valid: boolean; user: JwtPayload }> => {
     const response = await api.post<{ valid: boolean; user: JwtPayload }>('/auth/validate', { token });
+    return response.data;
+  },
+};
+
+// Schedules API
+export const schedulesApi = {
+  getAll: async (): Promise<Schedule[]> => {
+    const response = await api.get<Schedule[]>('/schedules');
+    return response.data;
+  },
+
+  getStatus: async (): Promise<ScheduleStatus> => {
+    const response = await api.get<ScheduleStatus>('/schedules/status');
+    return response.data;
+  },
+
+  update: async (id: number, data: UpdateScheduleDto): Promise<Schedule> => {
+    const response = await api.patch<Schedule>(`/schedules/${id}`, data);
     return response.data;
   },
 };

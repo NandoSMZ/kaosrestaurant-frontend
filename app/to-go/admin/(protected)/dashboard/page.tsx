@@ -105,7 +105,7 @@ export default function DashboardPage() {
       {/* ── Resumen en vivo ── */}
       <section>
         <h2 className="text-xl font-semibold text-gray-700 mb-4">Resumen en vivo</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {(Object.values(TransactionStatus) as TransactionStatus[]).map((status) => (
             <div
               key={status}
