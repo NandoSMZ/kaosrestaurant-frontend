@@ -322,13 +322,16 @@ export default function TrackOrderPage() {
         {/* Search card */}
         <div className="bg-white rounded-xl shadow-md p-6 mb-6">
           <p className="text-sm text-gray-600 mb-4">
-            Ingresa el número de teléfono con el que realizaste tu pedido para ver su estado.
+            Ingresa tu número de teléfono <span className="font-semibold">sin indicativo de país</span> para ver el estado de tu pedido.
           </p>
           <div className="flex gap-2">
             <input
               type="tel"
               value={phoneInput}
-              onChange={(e) => { setPhoneInput(e.target.value); setError(''); }}
+              onChange={(e) => {
+                setPhoneInput(e.target.value.replace(/[^\d\s]/g, ''));
+                setError('');
+              }}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Ej: 612 345 678"
               className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e86b07] ${

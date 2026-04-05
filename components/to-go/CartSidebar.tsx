@@ -9,13 +9,16 @@ import { toast } from 'react-toastify';
 
 type Step = 'cart' | 'checkout' | 'success';
 
+
+
 export default function CartSidebar() {
   const { items, removeItem, updateQuantity, total, itemCount, isOpen, closeCart, clearCart } =
     useCart();
 
   const [step, setStep] = useState<Step>('cart');
   const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState('34');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [pickupTime, setPickupTime] = useState('');
   const [errors, setErrors] = useState<{ fullName?: string; phone?: string; pickupTime?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,9 +26,15 @@ export default function CartSidebar() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
 
-  // Tiempo mínimo: 20 minutos desde ahora en formato datetime-local (hora local)
+  // Tiempo mínimo: 20 min. Default pre-cargado: 60 min (margen para llenar el formulario)
   const getMinPickupTime = () => {
     const d = new Date(Date.now() + 20 * 60 * 1000);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const getDefaultPickupTime = () => {
+    const d = new Date(Date.now() + 60 * 60 * 1000);
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
@@ -53,7 +62,7 @@ export default function CartSidebar() {
 
   /** Avanza al checkout pre-cargando el mínimo de recogida */
   const handleGoToCheckout = () => {
-    setPickupTime(getMinPickupTime());
+    setPickupTime(getDefaultPickupTime());
     setErrors({});
     setStep('checkout');
   };
@@ -74,7 +83,7 @@ export default function CartSidebar() {
     if (step !== 'success') {
       setStep('cart');
       setFullName('');
-      setPhone('');
+      setPhoneNumber('');
       setPickupTime('');
       setErrors({});
     }
@@ -84,7 +93,7 @@ export default function CartSidebar() {
   const handleCloseSuccess = () => {
     setStep('cart');
     setFullName('');
-    setPhone('');
+    setPhoneNumber('');
     setPickupTime('');
     setErrors({});
     setConfirmedOrder(null);
@@ -97,30 +106,24 @@ export default function CartSidebar() {
     if (!fullName.trim()) {
       newErrors.fullName = 'El nombre completo es obligatorio';
     }
-    if (!phone.trim()) {
+    if (!phoneCountry.trim() || !/^\d{1,4}$/.test(phoneCountry.trim())) {
+      newErrors.phone = 'Ingresa un indicativo de país válido (solo dígitos, ej: 34)';
+    } else if (!phoneNumber.trim()) {
       newErrors.phone = 'El teléfono es obligatorio';
-    } else if (!/^[0-9+\s\-()]{6,20}$/.test(phone.trim())) {
-      newErrors.phone = 'Ingresa un teléfono válido';
+    } else if (!/^[\d\s]{4,17}$/.test(phoneNumber.trim())) {
+      newErrors.phone = 'Ingresa solo los dígitos locales, sin indicativo. Mínimo 4 dígitos.';
     }
     if (!pickupTime) {
       newErrors.pickupTime = 'Selecciona la hora de recogida';
     } else if (new Date(pickupTime) < new Date(Date.now() + 18 * 60 * 1000)) {
       newErrors.pickupTime = 'La hora debe ser al menos 20 minutos a partir de ahora';
     } else {
+      // Solo validamos si el DÍA está activo — la franja horaria la valida el backend
+      // (el frontend no conoce la timezone del restaurante)
       const schedule = getScheduleForPickup(pickupTime);
-      if (schedules.length > 0) {
-        if (!schedule || !schedule.isActive) {
-          const dayName = new Date(pickupTime).toLocaleDateString('es-ES', { weekday: 'long' });
-          newErrors.pickupTime = `La tienda no abre los ${dayName}s. Consulta los horarios disponibles.`;
-        } else {
-          const d = new Date(pickupTime);
-          const pickupMins = d.getHours() * 60 + d.getMinutes();
-          const [oh, om] = schedule.openTime.split(':').map(Number);
-          const [ch, cm] = schedule.closeTime.split(':').map(Number);
-          if (pickupMins < oh * 60 + om || pickupMins >= ch * 60 + cm) {
-            newErrors.pickupTime = `La tienda está cerrada a esa hora. El ${schedule.dayName} abrimos de ${schedule.openTime} a ${schedule.closeTime}.`;
-          }
-        }
+      if (schedules.length > 0 && (!schedule || !schedule.isActive)) {
+        const dayName = new Date(pickupTime).toLocaleDateString('es-ES', { weekday: 'long' });
+        newErrors.pickupTime = `La tienda no abre los ${dayName}s. Consulta los horarios disponibles.`;
       }
     }
 
@@ -135,7 +138,7 @@ export default function CartSidebar() {
     try {
       const order = await transactionsApi.create({
         fullName: fullName.trim(),
-        phone: phone.trim(),
+        phone: `+${phoneCountry} ${phoneNumber.trim()}`,
         pickupTime: new Date(pickupTime).toISOString(),
         contents: items.map((item) => ({
           productId: item.product.id,
@@ -341,27 +344,57 @@ export default function CartSidebar() {
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
                     Teléfono <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => {
-                      setPhone(e.target.value);
-                      if (errors.phone) setErrors((prev) => ({ ...prev, phone: undefined }));
-                    }}
-                    placeholder="Ej: 612 345 678"
-                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e86b07] ${
-                      errors.phone ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
+                  <div className={`flex rounded-lg border overflow-hidden focus-within:ring-2 focus-within:ring-[#e86b07] ${
+                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                  }`}>
+                    {/* Prefijo + fijo */}
+                    <span className="flex items-center bg-gray-50 border-r border-gray-300 pl-3 pr-1 text-sm font-semibold text-gray-500 select-none">
+                      +
+                    </span>
+                    {/* Input indicativo: solo dígitos, max 4 chars */}
+                    <input
+                      type="tel"
+                      value={phoneCountry}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        setPhoneCountry(val);
+                        if (errors.phone) setErrors((prev) => ({ ...prev, phone: undefined }));
+                      }}
+                      placeholder="34"
+                      className="w-12 px-1 py-2 text-sm text-center focus:outline-none bg-gray-50 border-r border-gray-300"
+                    />
+                    {/* Número local */}
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^\d\s]/g, '');
+                        setPhoneNumber(val);
+                        if (errors.phone) setErrors((prev) => ({ ...prev, phone: undefined }));
+                      }}
+                      placeholder="612 345 678"
+                      className="flex-1 px-3 py-2 text-sm focus:outline-none min-w-0"
+                    />
+                  </div>
                   {errors.phone && (
                     <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
                   )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    Número completo: <span className="font-medium text-gray-600">+{phoneCountry || '··'} {phoneNumber || '...'}</span>
+                  </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
                     ¿Cuándo pasarás a recoger? <span className="text-red-500">*</span>
                   </label>
+                  {/* Aviso mínimo siempre visible */}
+                  <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mb-2">
+                    <span className="text-amber-500 text-sm">⏱</span>
+                    <p className="text-xs text-amber-700 font-medium">
+                      El pedido debe programarse con al menos <strong>20 minutos</strong> de antelación.
+                    </p>
+                  </div>
                   <input
                     type="datetime-local"
                     value={pickupTime}
@@ -389,7 +422,6 @@ export default function CartSidebar() {
                       </p>
                     );
                   })()}
-                  {!pickupTime && <p className="text-xs text-gray-400 mt-1">Mínimo 20 minutos a partir de ahora</p>}
                 </div>
               </div>
             </div>
