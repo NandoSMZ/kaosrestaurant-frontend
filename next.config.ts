@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "res.cloudinary.com"
       },
+      {
+        protocol: "https",
+        hostname: "kaosrestaurant-backend.onrender.com"
+      },
     ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
