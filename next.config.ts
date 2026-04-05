@@ -29,9 +29,22 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "kaosrestaurant-backend.onrender.com"
       },
+            {
+        protocol: "https",
+        hostname: "togo.kaosrestaurant.com"
+      },
     ],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
+  },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/to-go',
+        permanent: true,
+      },
+    ];
   },
   async rewrites() {
     return [
