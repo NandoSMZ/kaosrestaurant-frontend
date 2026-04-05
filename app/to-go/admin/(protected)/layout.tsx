@@ -56,7 +56,7 @@ function sendBrowserNotification(title: string, body: string) {
       badge: '/images/Logos/apple-icon.png',
       tag: 'kaos-order',          // agrupa para no spamear
       renotify: true,             // siempre re-alerta aunque use el mismo tag
-    });
+    } as NotificationOptions & { renotify: boolean });
     setTimeout(() => n.close(), 8000);
   } catch (e) {
     console.warn('Browser notification error:', e);
