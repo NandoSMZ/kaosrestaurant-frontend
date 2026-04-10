@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { getImageUrl, transactionsApi, schedulesApi } from '@/lib/api';
 import { Transaction, Schedule } from '@/lib/types';
@@ -14,8 +15,10 @@ type Step = 'cart' | 'checkout' | 'success';
 export default function CartSidebar() {
   const { items, removeItem, updateQuantity, total, itemCount, isOpen, closeCart, clearCart } =
     useCart();
+  const router = useRouter();
 
   const [step, setStep] = useState<Step>('cart');
+  const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const [fullName, setFullName] = useState('');
   const [phoneCountry, setPhoneCountry] = useState('34');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -131,9 +134,13 @@ export default function CartSidebar() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleConfirmOrder = async () => {
+  const handleConfirmOrder = () => {
     if (!validate()) return;
+    setShowPaymentConfirm(true);
+  };
 
+  const handleDoConfirmOrder = async () => {
+    setShowPaymentConfirm(false);
     setIsSubmitting(true);
     try {
       const order = await transactionsApi.create({
@@ -161,6 +168,37 @@ export default function CartSidebar() {
     <div className="relative z-70">
       {/* Overlay */}
       <div className="fixed inset-0 bg-black/30" onClick={handleClose} />
+
+      {/* Modal confirmación pago en establecimiento */}
+      {showPaymentConfirm && (
+        <div className="fixed inset-0 z-80 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <div className="text-4xl text-center mb-3">💳</div>
+            <h3 className="text-lg font-bold text-gray-900 text-center mb-3">
+              Pago en el establecimiento
+            </h3>
+            <p className="text-sm text-gray-600 text-center mb-5 leading-relaxed">
+              Estimado usuario, le informamos que la orden se creará con{' '}
+              <strong>pago en el establecimiento</strong>. Actualmente estamos trabajando
+              para incluir pago electrónico. ¿Deseas continuar?
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleDoConfirmOrder}
+                className="w-full bg-[#e86b07] hover:bg-[#d05f06] text-white font-bold py-3 rounded-lg transition cursor-pointer"
+              >
+                Sí, confirmar pedido
+              </button>
+              <button
+                onClick={() => setShowPaymentConfirm(false)}
+                className="w-full border border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold py-2 rounded-lg transition cursor-pointer text-sm"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sidebar */}
       <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl flex flex-col">
@@ -495,9 +533,18 @@ export default function CartSidebar() {
               <div className="w-full bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800 font-medium text-center mb-2">
                 🕐 Restaurante confirmando tu pedido...
               </div>
-              <p className="text-xs text-gray-400 text-center mb-4">
-                Usa <strong>Seguir Pedido</strong> para ver el estado en tiempo real
-              </p>
+              <button
+                onClick={() => {
+                  handleCloseSuccess();
+                  router.push('/to-go/track');
+                }}
+                className="w-full flex items-center justify-center gap-2 border-2 border-[#e86b07] text-[#e86b07] hover:bg-[#e86b07] hover:text-white font-semibold py-2.5 rounded-lg transition cursor-pointer text-sm mb-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Seguir mi pedido en tiempo real
+              </button>
 
               <div className="w-full space-y-1">
                 {confirmedOrder.contents?.map((item) => (
